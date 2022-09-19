@@ -66,7 +66,7 @@ fn process_file(
         .context("failed to read exif data")?;
 
     // get date time
-    let dt = get_datetime(exif).context("parsing exif failure")?;
+    let dt = get_datetime(exif)?;
     trace!("{:?} -> {:#?}", existing_path, dt);
 
     // construct new filename => ":target/:month/:year/:name"
@@ -145,7 +145,7 @@ fn main() -> Result<()> {
                 // failed to process file
                 // XXX this is super verbose, should this be behind a `-v` option?
                 eprintln!("-----");
-                eprintln!("{} error", path.display());
+                eprintln!("[error] {}", path.display());
                 eprintln!("{:?}", e);
                 eprintln!("-----");
                 had_error = true;
