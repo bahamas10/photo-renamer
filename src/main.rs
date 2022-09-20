@@ -127,6 +127,8 @@ fn main() -> Result<()> {
     let args = arguments::parse();
     debug!("{:#?}", args);
 
+    ensure!(!args.files.is_empty(), "at least 1 file must be specified");
+
     let mut had_error = false;
 
     // loop files found

@@ -1,14 +1,13 @@
-photo-rename
-============
+photo-renamer
+=============
 
 Rename picture and media files based on their exif data
 
-Usage
------
-
+Example
+--------
 
 ```
-$ cargo run -q -- -a copy -d ./target-dir ~/Desktop/IMG_8670.HEIC
+$ photo-renamer -a copy -d ./target-dir ~/Desktop/IMG_8670.HEIC
 Copy /Users/dave/Desktop/IMG_8670.HEIC -> ./target-dir/2022/09/IMG_8670.HEIC
 ```
 
@@ -29,6 +28,26 @@ Building
 
     cargo build
     cargo run
+
+Usage
+-----
+
+```
+photo-renamer
+
+USAGE:
+    photo-renamer [OPTIONS] [FILES]...
+
+ARGS:
+    <FILES>...    Photos to process
+
+OPTIONS:
+    -a, --action <action>     Action to take for file organization [default: move] [possible values:
+                              move, copy, hardlink]
+    -d, --target-dir <dir>    Directory to output files to [default: .]
+    -h, --help                Print help information
+    -n, --dry-run             Don't actually take any action
+```
 
 Debugging
 ---------
