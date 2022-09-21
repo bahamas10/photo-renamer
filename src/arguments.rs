@@ -4,6 +4,16 @@ use clap::{Parser, ValueEnum};
 
 #[derive(Debug, Parser)]
 pub struct Args {
+    /// Action to take on filename collision
+    #[clap(
+        short = 'c',
+        long,
+        arg_enum,
+        default_value_t = Collision::Skip,
+        value_name = "collision",
+    )]
+    pub collision: Collision,
+
     /// Action to take for file organization
     #[clap(
         short = 'a',
@@ -40,6 +50,18 @@ pub struct Args {
 
     /// Photos to process
     pub files: Vec<path::PathBuf>,
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+pub enum Collision {
+    /// Ignore files (refuse to overwrite)
+    Skip,
+
+    /// Rename files
+    Rename,
+
+    /// Overwrite files
+    Overwrite,
 }
 
 #[derive(Debug, Clone, ValueEnum)]

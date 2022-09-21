@@ -12,43 +12,81 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, ensure, Context, Result};
-use log::debug;
+use exif::DateTime;
+use log::{debug, info, trace};
 
 mod arguments;
 mod gatherer;
 
-use arguments::{Action, Gatherer};
+use arguments::{Action, Args, Collision, Gatherer};
+
+/// figure out the name of the new file
+fn new_file_path(
+    existing_path: &Path,
+    args: &Args,
+    dt: &DateTime,
+) -> Result<PathBuf> {
+    // get file basename (file name)
+    let file_basename = existing_path
+        .file_name()
+        .context("failed to extract filename")?
+        .to_str()
+        .context("failed to parse filename as valid utf8")?;
+
+    let mut copy = 0;
+    loop {
+        // construct new filename => ":target/:month/:year/(:copy) :name"
+        // with (:copy) being optional if "rename" mode is specified
+        let name = if copy > 0 {
+            format!("({}) {}", copy, file_basename)
+        } else {
+            file_basename.to_string()
+        };
+        let new_path = args
+            .target_dir
+            .join(format!("{}", dt.year))
+            .join(format!("{:02}", dt.month))
+            .join(name);
+        trace!("trying path {:?}", new_path);
+
+        // just return the new path if it doesn't currently exist (no-collision)
+        if !new_path.exists() {
+            debug!("{:?} -> {:?}", existing_path, new_path);
+            return Ok(new_path);
+        }
+
+        // handle collision
+        debug!("new path {:?} exists", new_path);
+        match args.collision {
+            Collision::Skip => {
+                // return here with an error if we are in skip mode
+                bail!("{:?} already exists, refusing to overwrite", new_path);
+            }
+            Collision::Overwrite => {
+                // break the loop here and continue if we are in overwrite
+                // mode
+                info!("overwriting {:?} with {:?}", new_path, existing_path);
+                return Ok(new_path);
+            }
+            Collision::Rename => {
+                // try to create a new filename if rename is set
+                copy += 1;
+            }
+        };
+    }
+}
 
 /// Process a single file given on the command line, returns the new file path
 /// if successful
-fn process_file(
-    args: &arguments::Args,
-    existing_path: &Path,
-) -> Result<PathBuf> {
-    // get file basename (file name)
-    let file_basename =
-        existing_path.file_name().context("failed to extract filename")?;
-
+fn process_file(args: &Args, existing_path: &Path) -> Result<PathBuf> {
+    // get the date time for the file
     let dt = match args.gatherer {
         Gatherer::Exif => gatherer::exif::get_date(existing_path),
         Gatherer::Exiftool => gatherer::exiftool::get_date(existing_path),
     }?;
 
-    // construct new filename => ":target/:month/:year/:name"
-    // XXX should this be customizable?
-    let new_path = args
-        .target_dir
-        .join(format!("{}", dt.year))
-        .join(format!("{:02}", dt.month))
-        .join(file_basename);
-    debug!("{:?} -> {:?}", existing_path, new_path);
-
-    // check if the new path exists already
-    ensure!(
-        !new_path.exists(),
-        "{:?} already exists, refusing to overwrite",
-        new_path
-    );
+    // construct the new filename
+    let new_path = new_file_path(existing_path, args, &dt)?;
 
     // stop here if dry-run
     if args.dry_run {
@@ -63,7 +101,7 @@ fn process_file(
     fs::create_dir_all(&parent_dir)
         .with_context(|| format!("failed to create dirs {:?}", parent_dir))?;
 
-    // performa the action on the file
+    // perform the action on the file (move, copy, hardlink)
     let error_msg = format!(
         "failed to {:?} {} -> {}",
         args.action,
