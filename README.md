@@ -3,8 +3,10 @@ photo-renamer
 
 Rename picture and media files based on their exif data
 
-Example
+Examples
 --------
+
+Basic:
 
 ```
 $ photo-renamer -a copy -d ./target-dir ~/Desktop/IMG_8670.HEIC
@@ -21,6 +23,20 @@ $ tree ./target-dir/
         └── IMG_8670.HEIC
 
 2 directories, 1 file
+```
+
+Using `find`:
+
+```
+find /pictures/unsorted -type f -print0 | xargs -0 photo-renamer -a copy -d /pictures/sorted
+```
+
+`photo-renamer` uses an internal `exif` parsing logic by default, but can be
+told to fork the `exiftool` instead (useful for sorting movie files or other
+media that isn't supported by the `exif` library):
+
+```
+photo-renamer -g exiftool *.mov *.mp4
 ```
 
 Building
@@ -42,11 +58,13 @@ ARGS:
     <FILES>...    Photos to process
 
 OPTIONS:
-    -a, --action <action>     Action to take for file organization [default: move] [possible values:
-                              move, copy, hardlink]
-    -d, --target-dir <dir>    Directory to output files to [default: .]
-    -h, --help                Print help information
-    -n, --dry-run             Don't actually take any action
+    -a, --action <action>        Action to take for file organization [default: move] [possible
+                                 values: move, copy, hardlink]
+    -d, --target-dir <dir>       Directory to output files to [default: .]
+    -g, --gatherer <gatherer>    Gatherer to use for file metadata [default: exif] [possible values:
+                                 exif, exiftool]
+    -h, --help                   Print help information
+    -n, --dry-run                Don't actually take any action
 ```
 
 Debugging

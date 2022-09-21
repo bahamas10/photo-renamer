@@ -8,42 +8,16 @@
  * License: MIT
  */
 
+use std::fs;
 use std::path::{Path, PathBuf};
-use std::{fs, io};
 
 use anyhow::{bail, ensure, Context, Result};
-use exif::Exif;
-use exif::{DateTime, Value};
-use exif::{In, Tag};
-use log::{debug, trace};
+use log::debug;
 
 mod arguments;
+mod gatherer;
 
-use arguments::Action;
-
-/// Extract date-time from a given exif object
-fn get_datetime(exif: Exif) -> Result<DateTime> {
-    // extract the date time exif field
-    let date = exif
-        .get_field(Tag::DateTime, In::PRIMARY)
-        .context("failed to get date exif data")?;
-
-    // ensure the data is in ascii format
-    let data = match &date.value {
-        Value::Ascii(vec) => vec,
-        o => bail!("incorrect exif data format: {:?}", o),
-    };
-
-    // ensure data is actually present
-    ensure!(!data.is_empty(), "empty exif date data found");
-    let data = &data[0];
-
-    // parse the date
-    let dt = DateTime::from_ascii(data)
-        .context("failed to parse exif date time format")?;
-
-    Ok(dt)
-}
+use arguments::{Action, Gatherer};
 
 /// Process a single file given on the command line, returns the new file path
 /// if successful
@@ -55,19 +29,10 @@ fn process_file(
     let file_basename =
         existing_path.file_name().context("failed to extract filename")?;
 
-    // open the file
-    let file = fs::File::open(&existing_path)?;
-    let mut br = io::BufReader::new(&file);
-
-    // read the exif data
-    let exifread = exif::Reader::new();
-    let exif = exifread
-        .read_from_container(&mut br)
-        .context("failed to read exif data")?;
-
-    // get date time
-    let dt = get_datetime(exif)?;
-    trace!("{:?} -> {:#?}", existing_path, dt);
+    let dt = match args.gatherer {
+        Gatherer::Exif => gatherer::exif::get_date(existing_path),
+        Gatherer::Exiftool => gatherer::exiftool::get_date(existing_path),
+    }?;
 
     // construct new filename => ":target/:month/:year/:name"
     // XXX should this be customizable?

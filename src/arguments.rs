@@ -20,9 +20,19 @@ pub struct Args {
         long,
         parse(from_os_str),
         default_value = ".",
-        value_name = "dir",
+        value_name = "dir"
     )]
     pub target_dir: path::PathBuf,
+
+    /// Gatherer to use for file metadata
+    #[clap(
+        short = 'g',
+        long,
+        arg_enum,
+        default_value_t = Gatherer::Exif,
+        value_name = "gatherer",
+    )]
+    pub gatherer: Gatherer,
 
     /// Don't actually take any action
     #[clap(short = 'n', long)]
@@ -30,6 +40,15 @@ pub struct Args {
 
     /// Photos to process
     pub files: Vec<path::PathBuf>,
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+pub enum Gatherer {
+    /// Use exif data
+    Exif,
+
+    /// Use `exiftool`
+    Exiftool,
 }
 
 #[derive(Debug, Clone, ValueEnum)]
