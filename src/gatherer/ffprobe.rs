@@ -5,14 +5,19 @@ use anyhow::{ensure, Context, Result};
 use chrono::NaiveDateTime;
 use log::debug;
 
-const CMD: &str = "exiftool";
-const DATE_FMT: &str = "%Y:%m:%d %H:%M:%S";
+const CMD: &str = "ffprobe";
 
-/// Get the date from a file using the `exiftool` external program
+/// Get the date from a file using the `ffprobe` external program
 pub fn get_date(existing_path: &Path) -> Result<NaiveDateTime> {
     let output = Command::new(CMD)
-        .arg("-T")
-        .arg("-DateTimeOriginal")
+        .arg("-v")
+        .arg("quiet")
+        .arg("-select_streams")
+        .arg("v:0")
+        .arg("-show_entries")
+        .arg("stream_tags=creation_time")
+        .arg("-of")
+        .arg("default=noprint_wrappers=1:nokey=1")
         .arg(existing_path)
         .output()
         .with_context(|| format!("failed to execute {}", CMD))?;
@@ -26,18 +31,16 @@ pub fn get_date(existing_path: &Path) -> Result<NaiveDateTime> {
         String::from_utf8_lossy(&output.stderr)
     );
 
-    let date_str = String::from_utf8_lossy(&output.stdout);
+    let date_string = String::from_utf8_lossy(&output.stdout);
 
-    debug!("{} datetime raw {:?}", CMD, date_str);
-
-    // parse the date
-    let dt = NaiveDateTime::parse_from_str(date_str.trim(), DATE_FMT)
+    let dt = chrono::DateTime::parse_from_rfc3339(date_string.trim())
         .with_context(|| {
             format!(
-                "failed to parse `{}` date time {:?} as fmt {:?}",
-                CMD, date_str, DATE_FMT
+                "failed to parse {} output {:?} as a date",
+                CMD, date_string
             )
         })?;
+    let ndt = NaiveDateTime::new(dt.date_naive(), dt.time());
 
-    Ok(dt)
+    Ok(ndt)
 }

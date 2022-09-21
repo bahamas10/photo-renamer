@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.65"
+chrono = "0.4.22"
 clap = { version = "3.1.1", features = ["cargo", "derive"] }
 env_logger = "0.9.1"
 kamadak-exif = "0.5.4"

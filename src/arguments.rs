@@ -71,6 +71,9 @@ pub enum Gatherer {
 
     /// Use `exiftool`
     Exiftool,
+
+    /// Use `ffprobe`
+    Ffprobe,
 }
 
 #[derive(Debug, Clone, ValueEnum)]

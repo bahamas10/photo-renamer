@@ -12,7 +12,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, ensure, Context, Result};
-use exif::DateTime;
+use chrono::NaiveDateTime;
 use log::{debug, info, trace};
 
 mod arguments;
@@ -24,7 +24,7 @@ use arguments::{Action, Args, Collision, Gatherer};
 fn new_file_path(
     existing_path: &Path,
     args: &Args,
-    dt: &DateTime,
+    dt: &NaiveDateTime,
 ) -> Result<PathBuf> {
     // get file basename (file name)
     let file_basename = existing_path
@@ -32,6 +32,9 @@ fn new_file_path(
         .context("failed to extract filename")?
         .to_str()
         .context("failed to parse filename as valid utf8")?;
+
+    let year = dt.format("%Y").to_string();
+    let month = dt.format("%m").to_string();
 
     let mut copy = 0;
     loop {
@@ -42,11 +45,7 @@ fn new_file_path(
         } else {
             file_basename.to_string()
         };
-        let new_path = args
-            .target_dir
-            .join(format!("{}", dt.year))
-            .join(format!("{:02}", dt.month))
-            .join(name);
+        let new_path = args.target_dir.join(&year).join(&month).join(name);
         trace!("trying path {:?}", new_path);
 
         // just return the new path if it doesn't currently exist (no-collision)
@@ -83,6 +82,7 @@ fn process_file(args: &Args, existing_path: &Path) -> Result<PathBuf> {
     let dt = match args.gatherer {
         Gatherer::Exif => gatherer::exif::get_date(existing_path),
         Gatherer::Exiftool => gatherer::exiftool::get_date(existing_path),
+        Gatherer::Ffprobe => gatherer::ffprobe::get_date(existing_path),
     }?;
 
     // construct the new filename
