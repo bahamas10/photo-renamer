@@ -83,6 +83,8 @@ fn process_file(args: &Args, existing_path: &Path) -> Result<PathBuf> {
         Gatherer::Exif => gatherer::exif::get_date(existing_path),
         Gatherer::Exiftool => gatherer::exiftool::get_date(existing_path),
         Gatherer::Ffprobe => gatherer::ffprobe::get_date(existing_path),
+        Gatherer::FileCreate => gatherer::file_create::get_date(existing_path),
+        Gatherer::FileModify => gatherer::file_modify::get_date(existing_path),
     }?;
 
     // construct the new filename

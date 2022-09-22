@@ -74,6 +74,12 @@ pub enum Gatherer {
 
     /// Use `ffprobe`
     Ffprobe,
+
+    /// Use file create time from the filesystem
+    FileCreate,
+
+    /// Use file modify time from the filesystem
+    FileModify,
 }
 
 #[derive(Debug, Clone, ValueEnum)]

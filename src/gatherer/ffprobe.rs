@@ -40,7 +40,7 @@ pub fn get_date(existing_path: &Path) -> Result<NaiveDateTime> {
                 CMD, date_string
             )
         })?;
-    let ndt = NaiveDateTime::new(dt.date_naive(), dt.time());
+    let ndt = dt.naive_utc();
 
     Ok(ndt)
 }
