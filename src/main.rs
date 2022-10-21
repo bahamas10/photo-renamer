@@ -134,7 +134,7 @@ fn main() -> Result<()> {
 
     ensure!(!args.files.is_empty(), "at least 1 file must be specified");
 
-    let mut had_error = false;
+    let mut errors = 0;
 
     // loop files found
     for path in args.files.iter() {
@@ -155,13 +155,13 @@ fn main() -> Result<()> {
                 eprintln!("[error] {}", path.display());
                 eprintln!("{:?}", e);
                 eprintln!("-----");
-                had_error = true;
+                errors += 1;
             }
         }
     }
 
-    if had_error {
-        bail!("errors seen");
+    if errors > 0 {
+        bail!("{} error(s) seen", errors);
     }
 
     Ok(())
